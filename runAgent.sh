@@ -11,6 +11,7 @@ if [ -z ${1+x} ]; then
 fi
 
 if [ ! -f ${BAMBOO_CAPABILITIES} ]; then
+    mkdir -p $(dirname "${BAMBOO_CAPABILITIES}")
     cp ${INIT_BAMBOO_CAPABILITIES} ${BAMBOO_CAPABILITIES}
 fi
 
