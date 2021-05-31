@@ -1,1 +1,1 @@
-# bamboo-java-agent
+# Bamboo Java Agent
