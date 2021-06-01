@@ -16,9 +16,10 @@ RUN set -x \
 RUN set -x \
     && apt-get update \
     && apt-get install --yes --no-install-recommends \
+    ca-certificates \
     curl \
     gnupg \
-    ca-certificates \
+    openssh-client \
     tini \
     && rm -rf /var/lib/apt/lists/*
 
