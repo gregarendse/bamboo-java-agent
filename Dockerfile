@@ -50,9 +50,9 @@ RUN set -x \
 
 COPY --chown=bamboo:bamboo bamboo-update-capability.sh bamboo-update-capability.sh
 RUN set -x \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "${MAVEN_HOME}" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" /usr/lib/jvm/zulu-8-amd64 \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" /usr/lib/jvm/zulu-11-amd64
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/usr/share/maven" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu-8-amd64" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu-11-amd64"
 
 COPY --chown=bamboo:bamboo runAgent.sh runAgent.sh
 ENTRYPOINT ["./runAgent.sh"]
