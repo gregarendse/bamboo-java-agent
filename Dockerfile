@@ -37,6 +37,16 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/* \
     && update-java-alternatives --set /usr/lib/jvm/zulu-8-amd64
 
+RUN set -x \
+    && curl --silent https://api.github.com/repos/openshift/okd/releases/latest \
+    | sed --silent --regexp-extended 's#\s*"browser_download_url"\s*:\s*"(.*openshift-client-linux.*)"#\1#p' \
+    | xargs curl --location --silent --output openshift-client-linux-latest.tar.gz \
+    && mkdir -p /opt/openshift-client \
+    && tar xf openshift-client-linux-latest.tar.gz --directory /opt/openshift-client \
+    && rm openshift-client-linux-latest.tar.gz \
+    && ln -s /opt/openshift-client/oc /usr/bin/oc \
+    && ln -s /opt/openshift-client/kubectl /usr/bin/kubectl
+
 WORKDIR ${BAMBOO_USER_HOME}
 USER ${BAMBOO_USER}
 
@@ -52,7 +62,9 @@ COPY --chown=bamboo:bamboo bamboo-update-capability.sh bamboo-update-capability.
 RUN set -x \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/usr/share/maven" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu-8-amd64" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu-11-amd64"
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu-11-amd64" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.oc.executable" "/usr/bin/oc" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.kubectl.executable" "/usr/bin/kubectl"
 
 COPY --chown=bamboo:bamboo runAgent.sh runAgent.sh
 ENTRYPOINT ["./runAgent.sh"]
