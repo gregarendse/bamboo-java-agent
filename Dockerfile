@@ -24,7 +24,8 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Azul Apt repository
-RUN echo 'deb http://repos.azulsystems.com/ubuntu stable main' | tee /etc/apt/sources.list.d/zulu.list \
+RUN set -x\
+    &&  echo 'deb http://repos.azulsystems.com/ubuntu stable main' | tee /etc/apt/sources.list.d/zulu.list \
     &&  apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0xB1998361219BD9C9
 
 RUN set -x \
@@ -37,6 +38,7 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/* \
     && update-java-alternatives --set /usr/lib/jvm/zulu-8-amd64
 
+#   Install oc & kubectl
 RUN set -x \
     && curl --silent https://api.github.com/repos/openshift/okd/releases/latest \
     | sed --silent --regexp-extended 's#\s*"browser_download_url"\s*:\s*"(.*openshift-client-linux.*)"#\1#p' \
@@ -46,6 +48,10 @@ RUN set -x \
     && rm openshift-client-linux-latest.tar.gz \
     && ln -s /opt/openshift-client/oc /usr/bin/oc \
     && ln -s /opt/openshift-client/kubectl /usr/bin/kubectl
+
+#   Install Helm
+RUN set -x \
+    &&  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
 WORKDIR ${BAMBOO_USER_HOME}
 USER ${BAMBOO_USER}
@@ -64,7 +70,8 @@ RUN set -x \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu-8-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu-11-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.oc.executable" "/usr/bin/oc" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.kubectl.executable" "/usr/bin/kubectl"
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.kubectl.executable" "/usr/bin/kubectl" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.helm.executable" "$(which helm)"
 
 COPY --chown=bamboo:bamboo runAgent.sh runAgent.sh
 ENTRYPOINT ["./runAgent.sh"]
