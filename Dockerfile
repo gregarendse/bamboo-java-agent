@@ -56,22 +56,20 @@ RUN set -x \
 WORKDIR ${BAMBOO_USER_HOME}
 USER ${BAMBOO_USER}
 
-ARG BAMBOO_VERSION="7.2.4"
-ARG DOWNLOAD_URL=https://packages.atlassian.com/maven-closedsource-local/com/atlassian/bamboo/atlassian-bamboo-agent-installer/${BAMBOO_VERSION}/atlassian-bamboo-agent-installer-${BAMBOO_VERSION}.jar
-ENV AGENT_JAR=${BAMBOO_USER_HOME}/atlassian-bamboo-agent-installer.jar
-
 RUN set -x \
-    && curl -L --silent --output ${AGENT_JAR} ${DOWNLOAD_URL} \
     && mkdir -p ${BAMBOO_USER_HOME}/bamboo-agent-home/bin
 
 COPY --chown=bamboo:bamboo bamboo-update-capability.sh bamboo-update-capability.sh
 RUN set -x \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/usr/share/maven" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "$(which mvn)" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu-8-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu-11-amd64" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.oc.executable" "/usr/bin/oc" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.kubectl.executable" "/usr/bin/kubectl" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.helm.executable" "$(which helm)"
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.oc.executable" "$(which oc)" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "oc" "$(which oc)" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.kubectl.executable" "$(which kubectl)" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "kubectl" "$(which kubectl)" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.helm.executable" "$(which helm)" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "helm" "$(which helm)"
 
 COPY --chown=bamboo:bamboo runAgent.sh runAgent.sh
 ENTRYPOINT ["./runAgent.sh"]
