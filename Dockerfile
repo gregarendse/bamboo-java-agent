@@ -15,17 +15,16 @@ RUN set -x \
 
 RUN set -x \
     && apt-get update \
-    && apt-get install --yes --no-install-recommends \
+    && apt-get --no-install-recommends --no-install-suggests --yes install \
     ca-certificates \
     curl \
     gnupg \
     openssh-client \
-    tini \
-    && rm -rf /var/lib/apt/lists/*
+    tini
 
 # Add Azul Apt repository
 RUN set -x\
-    &&  echo 'deb http://repos.azulsystems.com/ubuntu stable main' | tee /etc/apt/sources.list.d/zulu.list \
+    &&  echo 'deb [ arch=amd64 ] https://repos.azul.com/zulu/deb/ stable main' | tee /etc/apt/sources.list.d/zulu.list \
     &&  apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0xB1998361219BD9C9
 
 RUN set -x \
@@ -33,12 +32,23 @@ RUN set -x \
     && apt-get --no-install-recommends --no-install-suggests --yes install \
     git \
     maven \
-    zulu-8 \
-    zulu-11 \
-    && rm -rf /var/lib/apt/lists/* \
-    && update-java-alternatives --set /usr/lib/jvm/zulu-8-amd64
+    zulu8-jdk \
+    zulu11-jdk \
+    zulu17-jdk \
+    && rm -rf /var/lib/apt/lists/*
 
-#   Install oc & kubectl
+RUN set -x \
+    && update-java-alternatives --set /usr/lib/jvm/zulu17-ca-amd64
+
+#   Install kubectl
+RUN set -x \
+    && KUBE_CTL_VERSION="$(curl --location --silent https://dl.k8s.io/release/stable.txt)" \
+    && curl --location --remote-name "https://dl.k8s.io/release/${KUBE_CTL_VERSION}/bin/linux/amd64/kubectl" \
+    && echo "$(curl --location --silent "https://dl.k8s.io/${KUBE_CTL_VERSION}/bin/linux/amd64/kubectl.sha256") kubectl" | sha256sum --check \
+    && install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl \
+    && kubectl version --client
+
+#   Install oc
 RUN set -x \
     && curl --silent https://api.github.com/repos/openshift/okd/releases/latest \
     | sed --silent --regexp-extended 's#\s*"browser_download_url"\s*:\s*"(.*openshift-client-linux.*)"#\1#p' \
@@ -46,8 +56,7 @@ RUN set -x \
     && mkdir -p /opt/openshift-client \
     && tar xf openshift-client-linux-latest.tar.gz --directory /opt/openshift-client \
     && rm openshift-client-linux-latest.tar.gz \
-    && ln -s /opt/openshift-client/oc /usr/bin/oc \
-    && ln -s /opt/openshift-client/kubectl /usr/bin/kubectl
+    && ln -s /opt/openshift-client/oc /usr/bin/oc
 
 #   Install Helm
 RUN set -x \
@@ -62,8 +71,10 @@ RUN set -x \
 COPY --chown=bamboo:bamboo bamboo-update-capability.sh bamboo-update-capability.sh
 RUN set -x \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "$(which mvn)" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu-8-amd64" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu-11-amd64" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.mvn" "$(which mvn)" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu8-ca-amd64" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu11-ca-amd64" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 17" "/usr/lib/jvm/zulu17-ca-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.oc.executable" "$(which oc)" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "oc" "$(which oc)" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.kubectl.executable" "$(which kubectl)" \
