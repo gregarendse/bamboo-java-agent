@@ -18,24 +18,37 @@ RUN set -x \
     && apt-get --no-install-recommends --no-install-suggests --yes install \
     ca-certificates \
     curl \
+    git \
     gnupg \
     openssh-client \
-    tini
+    tini \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 # Add Azul Apt repository
 RUN set -x\
     &&  echo 'deb [ arch=amd64 ] https://repos.azul.com/zulu/deb/ stable main' | tee /etc/apt/sources.list.d/zulu.list \
     &&  apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0xB1998361219BD9C9
 
+#   Install Java
 RUN set -x \
     && apt-get update  \
     && apt-get --no-install-recommends --no-install-suggests --yes install \
-    git \
-    maven \
     zulu8-jdk \
     zulu11-jdk \
     zulu17-jdk \
     && rm -rf /var/lib/apt/lists/*
+
+#   Install Maven
+RUN set -x \
+    &&  wget -O /tmp/maven.tar.gz https://dlcdn.apache.org/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz \
+    && echo "$(curl https://downloads.apache.org/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz.sha512) /tmp/maven.tar.gz" | sha512sum --check \
+    &&  mkdir -p /opt/maven \
+    &&  tar xf /tmp/maven.tar.gz -C /opt/maven \
+    &&  rm -rf /tmp/maven.tar.gz \
+    && /opt/maven/apache-maven-3.8.3/bin/mvn --version
+
+ENV PATH="/opt/maven/apache-maven-3.8.3/bin:$PATH"
 
 RUN set -x \
     && update-java-alternatives --set /usr/lib/jvm/zulu17-ca-amd64
@@ -70,8 +83,8 @@ RUN set -x \
 
 COPY --chown=bamboo:bamboo bamboo-update-capability.sh bamboo-update-capability.sh
 RUN set -x \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "$(which mvn)" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.mvn" "$(which mvn)" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/opt/maven/apache-maven-3.8.3" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.mvn" "/opt/maven/apache-maven-3.8.3" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu8-ca-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu11-ca-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 17" "/usr/lib/jvm/zulu17-ca-amd64" \
