@@ -41,14 +41,14 @@ RUN set -x \
 
 #   Install Maven
 RUN set -x \
-    &&  wget -O /tmp/maven.tar.gz https://dlcdn.apache.org/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz \
-    && echo "$(curl https://downloads.apache.org/maven/maven-3/3.8.3/binaries/apache-maven-3.8.3-bin.tar.gz.sha512) /tmp/maven.tar.gz" | sha512sum --check \
+    &&  wget -O /tmp/maven.tar.gz https://dlcdn.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz \
+    && echo "$(curl https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz.sha512) /tmp/maven.tar.gz" | sha512sum --check \
     &&  mkdir -p /opt/maven \
     &&  tar xf /tmp/maven.tar.gz -C /opt/maven \
     &&  rm -rf /tmp/maven.tar.gz \
-    && /opt/maven/apache-maven-3.8.3/bin/mvn --version
+    && /opt/maven/apache-maven-3.6.3/bin/mvn --version
 
-ENV PATH="/opt/maven/apache-maven-3.8.3/bin:$PATH"
+ENV PATH="/opt/maven/apache-maven-3.6.3/bin:$PATH"
 
 RUN set -x \
     && update-java-alternatives --set /usr/lib/jvm/zulu17-ca-amd64
@@ -83,8 +83,8 @@ RUN set -x \
 
 COPY --chown=bamboo:bamboo bamboo-update-capability.sh bamboo-update-capability.sh
 RUN set -x \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/opt/maven/apache-maven-3.8.3" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.mvn" "/opt/maven/apache-maven-3.8.3" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/opt/maven/apache-maven-3.6.3" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.mvn" "/opt/maven/apache-maven-3.6.3" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu8-ca-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu11-ca-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 17" "/usr/lib/jvm/zulu17-ca-amd64" \
