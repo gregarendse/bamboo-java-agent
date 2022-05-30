@@ -1,17 +1,6 @@
-FROM ubuntu
+FROM atlassian/bamboo-agent-base:8.2.1
 
-ENV BAMBOO_USER=bamboo
-ENV BAMBOO_GROUP=bamboo
-
-ENV BAMBOO_USER_HOME=/home/${BAMBOO_USER}
-ENV BAMBOO_AGENT_HOME=${BAMBOO_USER_HOME}/bamboo-agent-home
-
-ENV INIT_BAMBOO_CAPABILITIES=${BAMBOO_USER_HOME}/init-bamboo-capabilities.properties
-ENV BAMBOO_CAPABILITIES=${BAMBOO_AGENT_HOME}/bin/bamboo-capabilities.properties
-
-RUN set -x \
-    && addgroup ${BAMBOO_GROUP} \
-    && adduser ${BAMBOO_USER} --home ${BAMBOO_USER_HOME} --ingroup ${BAMBOO_GROUP} --disabled-password
+USER root
 
 RUN set -x \
     && apt-get update \
@@ -26,7 +15,7 @@ RUN set -x \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Azul Apt repository
-RUN set -x\
+RUN set -x \
     &&  echo 'deb [ arch=amd64 ] https://repos.azul.com/zulu/deb/ stable main' | tee /etc/apt/sources.list.d/zulu.list \
     &&  apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 0xB1998361219BD9C9
 
@@ -39,19 +28,18 @@ RUN set -x \
     zulu17-jdk \
     && rm -rf /var/lib/apt/lists/*
 
+ARG MAVEN_VERSION=3.6.3
+
 #   Install Maven
 RUN set -x \
-    &&  wget -O /tmp/maven.tar.gz https://dlcdn.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz \
-    && echo "$(curl https://downloads.apache.org/maven/maven-3/3.6.3/binaries/apache-maven-3.6.3-bin.tar.gz.sha512) /tmp/maven.tar.gz" | sha512sum --check \
+    &&  wget -O /tmp/maven.tar.gz https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz \
+    && echo "$(curl https://downloads.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz.sha512) /tmp/maven.tar.gz" | sha512sum --check \
     &&  mkdir -p /opt/maven \
     &&  tar xf /tmp/maven.tar.gz -C /opt/maven \
     &&  rm -rf /tmp/maven.tar.gz \
-    && /opt/maven/apache-maven-3.6.3/bin/mvn --version
+    && /opt/maven/apache-maven-${MAVEN_VERSION}/bin/mvn --version
 
-ENV PATH="/opt/maven/apache-maven-3.6.3/bin:$PATH"
-
-RUN set -x \
-    && update-java-alternatives --set /usr/lib/jvm/zulu17-ca-amd64
+ENV PATH="/opt/maven/apache-maven-${MAVEN_VERSION}/bin:$PATH"
 
 #   Install kubectl
 RUN set -x \
@@ -69,7 +57,8 @@ RUN set -x \
     && mkdir -p /opt/openshift-client \
     && tar xf openshift-client-linux-latest.tar.gz --directory /opt/openshift-client \
     && rm openshift-client-linux-latest.tar.gz \
-    && ln -s /opt/openshift-client/oc /usr/bin/oc
+    && ln -s /opt/openshift-client/oc /usr/bin/oc \
+    && oc version --client
 
 #   Install Helm
 RUN set -x \
@@ -79,12 +68,8 @@ WORKDIR ${BAMBOO_USER_HOME}
 USER ${BAMBOO_USER}
 
 RUN set -x \
-    && mkdir -p ${BAMBOO_USER_HOME}/bamboo-agent-home/bin
-
-COPY --chown=bamboo:bamboo bamboo-update-capability.sh bamboo-update-capability.sh
-RUN set -x \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/opt/maven/apache-maven-3.6.3" \
-    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.mvn" "/opt/maven/apache-maven-3.6.3" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.Maven 3" "/opt/maven/apache-maven-${MAVEN_VERSION}" \
+    && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.builder.mvn3.mvn" "/opt/maven/apache-maven-${MAVEN_VERSION}" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 8" "/usr/lib/jvm/zulu8-ca-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 11" "/usr/lib/jvm/zulu11-ca-amd64" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.jdk.JDK 17" "/usr/lib/jvm/zulu17-ca-amd64" \
@@ -94,6 +79,3 @@ RUN set -x \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "kubectl" "$(which kubectl)" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "system.helm.executable" "$(which helm)" \
     && ${BAMBOO_USER_HOME}/bamboo-update-capability.sh "helm" "$(which helm)"
-
-COPY --chown=bamboo:bamboo runAgent.sh runAgent.sh
-ENTRYPOINT ["./runAgent.sh"]
