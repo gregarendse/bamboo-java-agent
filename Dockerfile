@@ -12,6 +12,7 @@ RUN set -x \
     openssh-client \
     tini \
     wget \
+    lsb-release \
     && rm -rf /var/lib/apt/lists/*
 
 # Add Azul Apt repository
@@ -51,7 +52,7 @@ RUN set -x \
 
 #   Install oc
 RUN set -x \
-    && curl --silent https://api.github.com/repos/openshift/okd/releases/latest \
+    && curl -L --silent https://api.github.com/repos/openshift/okd/releases/latest \
     | sed --silent --regexp-extended 's#\s*"browser_download_url"\s*:\s*"(.*openshift-client-linux.*)"#\1#p' \
     | xargs curl --location --silent --output openshift-client-linux-latest.tar.gz \
     && mkdir -p /opt/openshift-client \
@@ -63,6 +64,23 @@ RUN set -x \
 #   Install Helm
 RUN set -x \
     &&  curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+#   Install Docker
+
+RUN set -x \
+    && mkdir -p /etc/apt/keyrings  \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" \
+      | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+RUN set -x \
+    && apt-get update \
+    && apt-get --no-install-recommends --no-install-suggests --yes install \
+      docker-ce \
+      docker-ce-cli \
+      containerd.io \
+      docker-buildx-plugin \
+      docker-compose-plugin
 
 WORKDIR ${BAMBOO_USER_HOME}
 USER ${BAMBOO_USER}
