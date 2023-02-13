@@ -1,4 +1,4 @@
-FROM atlassian/bamboo-agent-base:8.2.1
+FROM atlassian/bamboo-agent-base:7.1
 
 USER root
 
